@@ -4,7 +4,6 @@ const app = express();
 const path = require("path");
 const mysql = require('mysql');
 const bodyParser = require('body-parser');
-const MongoClient = require('mongodb').MongoClient;
 const port = 3000;
 
 //#region DB Connection
@@ -95,10 +94,6 @@ app.get('/employee/edit/:eid', (req,res)=>{
     //select the user with same eid
     var myQuery = "select * from employee where eid = '" + eid + "'";
 
-    // function updateForm(){
-    //     console.log("hi");
-    // }
-
     //get employees from database
     connection.query(myQuery, eid, (error, result) => {
         if (error) {
@@ -106,7 +101,6 @@ app.get('/employee/edit/:eid', (req,res)=>{
             res.send('Error retrieving employees from database.');
             return;
         }else{
-
             //store user info connected to EID
             var userInfo = [result[0].ename, result[0].role, result[0].salary];
 
@@ -114,10 +108,14 @@ app.get('/employee/edit/:eid', (req,res)=>{
             let editForm =  "<head>" +
                             "<title>Edit Employee</title>" +
                             "<h1>Edit Employee</h1>"+
+                            "<li>Employee Name must be at least 5 characters</li>" +
+                            "<li>Role can be either Manager or Employee</li>" +
+                            "<li>Salary must be > 0</li>" +
+                            "<br>"+
                             "</head>";
 
             //create edit form and store in variable
-            editForm += '<form style="border: 1px solid black; margin-top: 10px; background: linear-gradient(#e66465, #9198e5); width: 30%; border-collapse: separate";>';
+            editForm += '<form style="border: 1px solid black; padding: 2px; background: linear-gradient(#e66465, #9198e5); width: 30%; border-collapse: separate";>';
 
             editForm += '<label>EID</label>';
             editForm += '<input readonly placeholder="'+ eid + '"><br>';
@@ -128,11 +126,28 @@ app.get('/employee/edit/:eid', (req,res)=>{
             editForm += '<label>Salary</label>';
             editForm += '<input type="number" placeholder="'+ userInfo[2] + '"><br>';
 
+            //onclick not working
+            function updateForm(){
+                var myQuery = "update employee set ename = 'input' where eid = '" + eid + "'";
+                var myQuery = "update employee set role = 'input' where eid = '" + eid + "'";
+                var myQuery = "update employee set salary = 'input' where eid = '" + eid + "'";
+
+                connection.query(myQuery, eid, (error, result) => {
+                    if (error) {
+                        console.error(error);
+                        res.send('Error retrieving employees from database.');
+                        return;
+                    }else{
+                        //link to employee page
+                        editForm+= '<br><br><a href="http://localhost:3000/employee"></a>';
+                    }});
+                }
+
             //button
-            editForm +='<br><button onClick="updateForm()">Update</button>'
+            editForm +='<br><button onclick="updateForm()">Update</button>'
 
             //link to home page
-            editForm+= '<br><a href="http://localhost:3000/">Home</a>';
+            editForm+= '<br><br><a href="http://localhost:3000/">Home</a>';
 
             res.send(editForm);
         }
@@ -204,20 +219,40 @@ app.get('/depts/delete/:did', (req,res)=>{
             return;
         }else{
 
-            //store user info connected to EID
-            var deptInfo = [result[0].dname, result[0].lid, result[0].budget];
-
             let deleteDept =    "<head>" +
                                 "<title>Departments</title>" +
                                 "<h1>Departments</h1>"+
                                 "</head>";
+            
+
+            //finance in the only department with no employee
+            if(did == "FIN"){
+
+                //delete the row with FIN
+                var myQuery = "delete from dept where did = '" + did + "'";
+                 //get departments from database
+                connection.query(myQuery, did, (error, result) => {
+                if (error) {
+                    console.error(error);
+                    res.send('Error retrieving employees from database.');
+                    return;
+                }else{
+                    //link to departments page
+                    deleteDept += '<br><a href="http://localhost:3000/depts"></a>';
+                }
+            });
+
+            }
+            else{
+                //cant be deleted message
+                deleteDept += "<br><br><h1>" + did + " has Employees and cannot be deleted</h1>";
+            }
 
             //link to home page
             deleteDept += '<br><a href="http://localhost:3000/">Home</a>';
 
             res.send(deleteDept);
-        }
-    });
+    }});
 });
 //#endregion
 
